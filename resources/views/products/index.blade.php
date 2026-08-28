@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
 @section('content')
-<<div class="container">
+<div class="container">
     <h2 class="mb-4">商品一覧画面</h2>
 
     <!-- 検索フォーム & 新規登録ボタンエリア -->

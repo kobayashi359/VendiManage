@@ -3,111 +3,87 @@
 namespace App\Http\Controllers;
 
 use App\Models\Product;
-use App\Models\Company; // ★ Company モデルをインポート
+use App\Models\Company;
+use App\Http\Requests\ProductRequest;
 use Illuminate\Http\Request;
 
 class ProductController extends Controller
 {
     public function index(Request $request)
-{
-    // クエリビルダの準備（リレーションを含める）
-    $query = Product::with('company');
+    {
+        $products = Product::search(
+            $request->input('keyword'),
+            $request->input('company_id')
+        )->get();
 
-    // 商品名で検索（あいまい検索）
-    if ($keyword = $request->input('keyword')) {
-        $query->where('product_name', 'LIKE', "%{$keyword}%");
+        $companies = Company::all();
+
+        return view('products.index', compact('products', 'companies'));
     }
-
-    // メーカーIDで絞り込み
-    if ($companyId = $request->input('company_id')) {
-        $query->where('company_id', $companyId);
-    }
-
-    // 商品一覧とメーカー一覧を取得
-    $products = $query->get();
-    $companies = Company::all();
-
-    return view('products.index', compact('products', 'companies'));
-}
 
     public function create()
     {
-        $companies = Company::all(); // 新規作成画面用
+        $companies = Company::all();
         return view('products.create', compact('companies'));
     }
 
-    public function store(Request $request)
+    public function store(ProductRequest $request)
     {
-        $request->validate([
-            'product_name' => 'required',
-            'company_id'   => 'required',
-            'price'        => 'required|integer',
-            'stock'        => 'required|integer',
-            'comment'      => 'nullable',
-            'img_path'     => 'nullable|image|max:2048',
-        ]);
-
-        $img_path = null;
+        $product = new Product();
+        
+        // 入力値の代入
+        $product->product_name = $request->product_name;
+        $product->company_id   = $request->company_id;
+        $product->price        = $request->price;
+        $product->stock        = $request->stock;
+        $product->comment      = $request->comment;
+        
+        // 画像の保存処理（ランダムなファイル名で保存）
         if ($request->hasFile('img_path')) {
-            $filename = $request->file('img_path')->getClientOriginalName();
-            $img_path = $request->file('img_path')->storeAs('products', $filename, 'public');
+            $dir = 'products';
+            $path = $request->file('img_path')->store($dir, 'public');
+            $product->img_path = $path; 
         }
 
-        Product::create([
-            'product_name' => $request->product_name,
-            'company_id'   => $request->company_id, // ★ company_name から company_id に修正
-            'price'        => $request->price,
-            'stock'        => $request->stock,
-            'comment'      => $request->comment,
-            'img_path'     => $img_path,
-        ]);
+        $product->save();
 
         return redirect()->route('products.index');
     }
 
     public function show($id)
     {
-        $product = Product::findOrFail($id);
+        $product = Product::with('company')->findOrFail($id);
         return view('products.show', compact('product'));
     }
 
     public function edit($id)
     {
         $product = Product::findOrFail($id);
-        $companies = Company::all(); // ★ セレクトボックス用にメーカー一覧を取得
+        $companies = Company::all();
         return view('products.edit', compact('product', 'companies'));
     }
 
-    public function update(Request $request, $id)
+    public function update(ProductRequest $request, $id)
     {
-        // 1. バリデーション
-        $request->validate([
-            'product_name' => 'required',
-            'company_id'   => 'required',
-            'price'        => 'required|integer',
-            'stock'        => 'required|integer',
-        ]);
-
-        // 2. 更新対象データの取得
         $product = Product::findOrFail($id);
-
-        // 3. 画像の保存処理（アップロードされた場合）
-        if ($request->hasFile('img_path')) {
-            $filename = $request->file('img_path')->getClientOriginalName();
-            $img_path = $request->file('img_path')->storeAs('products', $filename, 'public');
-            $product->img_path = $img_path;
-        }
-
-        // 4. データの更新
+       
+        // 入力値の更新
         $product->product_name = $request->product_name;
         $product->company_id   = $request->company_id;
         $product->price        = $request->price;
         $product->stock        = $request->stock;
         $product->comment      = $request->comment;
+
+        // 画像が送信されている場合のみ更新
+        if ($request->hasFile('img_path')) {
+            $dir = 'products';
+            $path = $request->file('img_path')->store($dir, 'public');
+            $product->img_path = $path;
+        }
+
         $product->save();
 
-        // 5. 一覧画面へリダイレクト
-        return redirect()->route('products.index')->with('success', '商品を更新しました');
+        return redirect()->route('products.index');
     }
 
     public function destroy($id)

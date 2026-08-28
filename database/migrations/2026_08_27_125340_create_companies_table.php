@@ -16,6 +16,11 @@ return new class extends Migration
     Schema::create('companies', function (Blueprint $table) {
         $table->id();
         $table->string('company_name');
+        
+        // ★ 以下の2行を追加（nullを許容するため nullable() を付けます）
+        $table->string('street_address')->nullable();
+        $table->string('representative_name')->nullable();
+        
         $table->timestamps();
     });
 }

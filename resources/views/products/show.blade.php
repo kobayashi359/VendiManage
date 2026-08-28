@@ -13,7 +13,7 @@
         <label class="fw-bold">商品画像:</label>
         <div>
             @if($product->img_path)
-                <img src="{{ asset($product->img_path) }}" alt="商品画像" width="200">
+                <img src="{{ asset('storage/' . $product->img_path) }}" alt="商品画像" width="200">
             @else
                 <p>画像はありません。</p>
             @endif
@@ -27,7 +27,7 @@
 
     <div class="mb-3">
         <label class="fw-bold">メーカー名:</label>
-        <p>{{ $product->company_name }}</p>
+        <p>{{ $product->company->company_name ?? '' }}</p>
     </div>
 
     <div class="mb-3">
