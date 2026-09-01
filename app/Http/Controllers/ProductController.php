@@ -29,23 +29,15 @@ class ProductController extends Controller
 
     public function store(ProductRequest $request)
     {
-        $product = new Product();
-        
-        // 入力値の代入
-        $product->product_name = $request->product_name;
-        $product->company_id   = $request->company_id;
-        $product->price        = $request->price;
-        $product->stock        = $request->stock;
-        $product->comment      = $request->comment;
-        
-        // 画像の保存処理（ランダムなファイル名で保存）
+        // 画像の保存処理
+        $imgPath = null;
         if ($request->hasFile('img_path')) {
-            $dir = 'products';
-            $path = $request->file('img_path')->store($dir, 'public');
-            $product->img_path = $path; 
+            $imgPath = $request->file('img_path')->store('products', 'public');
         }
 
-        $product->save();
+        // ★ Productモデルの createProduct メソッドを呼び出し
+        $product = new Product();
+        $product->createProduct($request->all(), $imgPath);
 
         return redirect()->route('products.index');
     }
@@ -66,22 +58,15 @@ class ProductController extends Controller
     public function update(ProductRequest $request, $id)
     {
         $product = Product::findOrFail($id);
-       
-        // 入力値の更新
-        $product->product_name = $request->product_name;
-        $product->company_id   = $request->company_id;
-        $product->price        = $request->price;
-        $product->stock        = $request->stock;
-        $product->comment      = $request->comment;
 
-        // 画像が送信されている場合のみ更新
+        // 画像が送信されている場合のみ保存処理
+        $imgPath = null;
         if ($request->hasFile('img_path')) {
-            $dir = 'products';
-            $path = $request->file('img_path')->store($dir, 'public');
-            $product->img_path = $path;
+            $imgPath = $request->file('img_path')->store('products', 'public');
         }
 
-        $product->save();
+        // ★ Productモデルの updateProduct メソッドを呼び出し
+        $product->updateProduct($request->all(), $imgPath);
 
         return redirect()->route('products.index');
     }
