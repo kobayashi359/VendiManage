@@ -72,3 +72,4 @@
         </tbody>
     </table>
 </div>
+@endsection
